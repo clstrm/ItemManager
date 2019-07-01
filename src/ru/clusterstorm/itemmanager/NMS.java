@@ -11,10 +11,6 @@ public class NMS {
 	private Method a, getHandle, sendPacket;
 	private Field playerConnection;
 	
-	private Class<?> chatMessageType;
-	@SuppressWarnings("unused")
-	private Object enumChatMessageType;
-	
 	public NMS(String ver) throws Exception {
 		iChatBaseComponent = Class.forName("net.minecraft.server." + ver + ".IChatBaseComponent");
 		Class<?> p = Class.forName("net.minecraft.server." + ver + ".Packet");
@@ -34,14 +30,6 @@ public class NMS {
 		}
 		
 		a = serializer.getMethod("a", String.class);
-		
-		try {
-			chatMessageType = Class.forName("net.minecraft.server." + ver + ".ChatMessageType");
-			Method valueOf = chatMessageType.getMethod("valueOf", String.class);
-			enumChatMessageType = valueOf.invoke(null, "GAME_INFO");
-		} catch(Exception e) {
-			// ignore
-		}
 	}
 	
 	public void sendJson(Player p, String json) {

@@ -1,5 +1,6 @@
 package ru.clusterstorm.itemmanager;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -11,10 +12,12 @@ public class ItemManager extends JavaPlugin {
 	@Override
 	public void onEnable() {
 		instance = this;
+		String ver = getVersion();
 		try {
-			nms = new NMS(getVersion());
+			nms = new NMS(ver);
 		} catch (Exception e) {
-			e.printStackTrace();
+			getLogger().severe("This plugin does not support version " + ver);
+			Bukkit.getPluginManager().disablePlugin(this);
 			return;
 		}
 		PluginCommand command = getCommand("itemmanager");

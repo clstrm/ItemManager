@@ -26,7 +26,10 @@ public class ItemCommand implements CommandExecutor {
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if(!sender.hasPermission("itemmanager.command")) return true;
+		if(!sender.hasPermission("itemmanager.command")) {
+			sender.sendMessage(PREFIX + "§cInsufficient permissions");
+			return true;
+		}
 		if(!(sender instanceof Player)) return true;
 		
 		Player p = (Player) sender;
@@ -56,12 +59,7 @@ public class ItemCommand implements CommandExecutor {
 				return true;
 			}
 			
-			StringBuilder b = new StringBuilder();
-			for (int i = 1; i < args.length; i++) {
-				b.append(args[i]);
-				if(i < args.length - 1) b.append(' ');
-			}
-			String name = ChatColor.translateAlternateColorCodes('&', b.toString());
+			String name = join(args, 1);
 			meta.setDisplayName(name);
 			item.setItemMeta(meta);
 			p.updateInventory();
@@ -82,22 +80,12 @@ public class ItemCommand implements CommandExecutor {
 				p.sendMessage(PREFIX + "Add line - /" + label + " lore add <text...>");
 				p.sendMessage(PREFIX + "Set line - /" + label + " lore set <index> <text...>");
 				p.sendMessage(PREFIX + "Remove line - /" + label + " lore remove <index>");
-				if(!meta.hasLore()) return true;
-				p.sendMessage("§8---------------");
-				int i = 0;
-				for (String s : meta.getLore()) {
-					lore(p, s, String.valueOf(i++));
-				}
+				sendLore(p, meta);
 				return true;
 			}
 			
 			if(args[1].equalsIgnoreCase("add")) {
-				StringBuilder b = new StringBuilder();
-				for (int i = 2; i < args.length; i++) {
-					b.append(args[i]);
-					if(i < args.length - 1) b.append(' ');
-				}
-				String line = ChatColor.translateAlternateColorCodes('&', b.toString());
+				String line = join(args, 2);
 				List<String> lore = meta.getLore();
 				if(lore == null) lore = new ArrayList<String>();
 				lore.add(line);
@@ -114,42 +102,21 @@ public class ItemCommand implements CommandExecutor {
 					return true;
 				}
 				
-				int line;
-				try {
-					line = Integer.parseInt(args[2]);
-					if(line < 0) throw new NumberFormatException();
-				} catch(NumberFormatException e) {
+				int line = parseLine(args[2]);
+				if(line < 0) {
 					p.sendMessage(PREFIX + "§cLine number must be an unsigned integer!");
 					return true;
 				}
 				
 				List<String> lore = meta.getLore();
-				if(lore == null || lore.isEmpty()) {
-					p.sendMessage(PREFIX + "§cYour item does not have lore");
-					return true;
-				}
+				if(!checkLoreLine(p, lore, line)) return true;
 				
-				int size = lore.size();
-				if(line >= size) {
-					p.sendMessage(PREFIX + "§cItem's lore has " + size + " lines");
-					return true;
-				}
-				
-				StringBuilder b = new StringBuilder();
-				for (int i = 3; i < args.length; i++) {
-					b.append(args[i]);
-					if(i < args.length - 1) b.append(' ');
-				}
-				String text = ChatColor.translateAlternateColorCodes('&', b.toString());
+				String text = join(args, 3);
 				lore.set(line, text);
 				meta.setLore(lore);
 				item.setItemMeta(meta);
 				p.updateInventory();
-				p.sendMessage("§8---------------");
-				int i = 0;
-				for (String s : meta.getLore()) {
-					lore(p, s, String.valueOf(i++));
-				}
+				sendLore(p, meta);
 				return true;
 			}
 			
@@ -159,36 +126,21 @@ public class ItemCommand implements CommandExecutor {
 					return true;
 				}
 				
-				int line;
-				try {
-					line = Integer.parseInt(args[2]);
-					if(line < 0) throw new NumberFormatException();
-				} catch(NumberFormatException e) {
+				int line = parseLine(args[2]);
+				if(line < 0) {
 					p.sendMessage(PREFIX + "§cLine number must be an unsigned integer!");
 					return true;
 				}
 				
-				List<String> lore = meta.getLore();
-				if(lore == null || lore.isEmpty()) {
-					p.sendMessage(PREFIX + "§cYour item does not have lore");
-					return true;
-				}
 				
-				int size = lore.size();
-				if(line >= size) {
-					p.sendMessage(PREFIX + "§cItem's lore has " + size + " lines");
-					return true;
-				}
+				List<String> lore = meta.getLore();
+				if(!checkLoreLine(p, lore, line)) return true;
 				
 				lore.remove(line);
 				meta.setLore(lore);
 				item.setItemMeta(meta);
 				p.updateInventory();
-				p.sendMessage("§8---------------");
-				int i = 0;
-				for (String s : meta.getLore()) {
-					lore(p, s, String.valueOf(i++));
-				}
+				sendLore(p, meta);
 				return true;
 			}
 			
@@ -204,6 +156,46 @@ public class ItemCommand implements CommandExecutor {
 		
 		
 		return true;
+	}
+
+	private int parseLine(String s) {
+		try {
+			return Integer.parseInt(s);
+		} catch(NumberFormatException e) {
+			return -1;
+		}
+	}
+
+	private boolean checkLoreLine(Player p, List<String> lore, int line) {
+		if(lore == null || lore.isEmpty()) {
+			p.sendMessage(PREFIX + "§cYour item does not have lore");
+			return false;
+		}
+		
+		int size = lore.size();
+		if(line >= size) {
+			p.sendMessage(PREFIX + "§cItem's lore has " + size + " lines");
+			return false;
+		}
+		return true;
+	}
+
+	private void sendLore(Player p, ItemMeta meta) {
+		if(!meta.hasLore()) return;
+		p.sendMessage("§8---------------");
+		int i = 0;
+		for (String s : meta.getLore()) {
+			lore(p, s, String.valueOf(i++));
+		}
+	}
+
+	private String join(String[] args, int start) {
+		StringBuilder b = new StringBuilder();
+		for (int i = start; i < args.length; i++) {
+			b.append(args[i]);
+			if(i < args.length - 1) b.append(' ');
+		}
+		return ChatColor.translateAlternateColorCodes('&', b.toString());
 	}
 
 	private void lore(Player p, String s, String line) {
