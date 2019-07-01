@@ -1,0 +1,7 @@
+name: ItemManager
+main: ru.clusterstorm.itemmanager.ItemManager
+version: 0.1
+author: ClusterStorm
+commands:
+  itemmanager:
+    aliases: [im]
