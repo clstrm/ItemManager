@@ -21,7 +21,11 @@ public class ItemManager extends JavaPlugin {
 			return;
 		}
 		PluginCommand command = getCommand("itemmanager");
-		if(command != null) command.setExecutor(new ItemCommand());
+		if(command != null) {
+			ItemCommand ic = new ItemCommand();
+			command.setExecutor(ic);
+			command.setTabCompleter(ic);
+		}
 	}
 	
 	private String getVersion() {
