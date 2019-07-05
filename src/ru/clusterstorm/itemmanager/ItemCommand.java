@@ -8,17 +8,23 @@ import java.util.Set;
 
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.enchantments.EnchantmentWrapper;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import com.google.common.collect.Lists;
+
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.chat.ComponentSerializer;
 
 public class ItemCommand implements CommandExecutor, TabCompleter {
 
@@ -39,7 +45,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 	static {
 		ENCHANTMENTS = new ArrayList<String>();
 		for (Enchantment e : Enchantment.values()) {
-			ENCHANTMENTS.add(e.getName().toLowerCase());
+			ENCHANTMENTS.add(e.getKey().getKey());
 		}
 
 		FLAGS = new ArrayList<String>();
@@ -69,7 +75,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 		}
 
 		if (args[0].equalsIgnoreCase("flag")) {
-			ItemStack item = p.getItemInHand();
+			ItemStack item = p.getInventory().getItemInMainHand();
 			if (item == null || item.getType() == Material.AIR) {
 				p.sendMessage(PREFIX + "§cYou have no item in hand");
 				return true;
@@ -79,7 +85,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 
 			if (args.length == 2) {
 				if (args[1].equalsIgnoreCase("unbreakable")) {
-					p.sendMessage(PREFIX + getItemName(item) + "§7 unbreakable§f: " + meta.spigot().isUnbreakable());
+					p.sendMessage(PREFIX + getItemName(item) + "§7 unbreakable§f: " + meta.isUnbreakable());
 				} else {
 					ItemFlag f = getFlag(args[1]);
 					if (f == null) {
@@ -104,7 +110,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 				}
 
 				if (args[1].equalsIgnoreCase("unbreakable")) {
-					if (meta.spigot().isUnbreakable()) {
+					if (meta.isUnbreakable()) {
 						if (value) {
 							p.sendMessage(PREFIX + "§c" + getItemName(item) + "§c is already unbreakable");
 							return true;
@@ -116,7 +122,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 						}
 					}
 
-					meta.spigot().setUnbreakable(value);
+					meta.setUnbreakable(value);
 					if (value)
 						p.sendMessage(PREFIX + "§aAdded flag §7unbreakable §ato §f" + getItemName(item));
 					else
@@ -153,7 +159,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 			p.sendMessage(PREFIX + "§cUsage - /" + label + " flag <flag> <true/false>");
 			
 			Set<ItemFlag> flags = meta.getItemFlags();
-			boolean unbreakable = meta.spigot().isUnbreakable();
+			boolean unbreakable = meta.isUnbreakable();
 			if (flags.isEmpty() && !unbreakable) {
 				p.sendMessage(PREFIX + "§c" + getItemName(item) + "§c has no item flags");
 				return true;
@@ -176,7 +182,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 		}
 
 		if (args[0].equalsIgnoreCase("ench")) {
-			ItemStack item = p.getItemInHand();
+			ItemStack item = p.getInventory().getItemInMainHand();
 			if (item == null || item.getType() == Material.AIR) {
 				p.sendMessage(PREFIX + "§cYou have no item in hand");
 				return true;
@@ -188,19 +194,20 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 				Map<Enchantment, Integer> ench = meta.getEnchants();
 				p.sendMessage(PREFIX + "Enchantments of " + getItemName(item) + "§f: " + ench.size());
 				for (Entry<Enchantment, Integer> e : ench.entrySet()) {
-					p.sendMessage(e.getKey().getName().toLowerCase() + ": " + e.getValue());
+					p.sendMessage(e.getKey().getKey().getKey().toLowerCase() + ": " + e.getValue());
 				}
 				return true;
 			}
-
-			Enchantment ench = Enchantment.getByName(args[1].toUpperCase());
+			
+			Enchantment ench = EnchantmentWrapper.getByKey(NamespacedKey.minecraft(args[1].toLowerCase()));
+			
 			if (ench == null) {
 				p.sendMessage(PREFIX + "§cUnknown enchantment: " + args[1]);
 				return true;
 			}
 
 			if (args.length < 3) {
-				p.sendMessage(PREFIX + getItemName(item) + "§7: " + ench.getName().toLowerCase() + "§f: "
+				p.sendMessage(PREFIX + getItemName(item) + "§7: " + ench.getKey().getKey().toLowerCase() + "§f: "
 						+ meta.getEnchantLevel(ench));
 				return true;
 			}
@@ -209,10 +216,10 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 			if (level <= 0) {
 				meta.removeEnchant(ench);
 				p.sendMessage(
-						PREFIX + "§aRemoved §7" + ench.getName().toLowerCase() + "§a from§f " + getItemName(item));
+						PREFIX + "§aRemoved §7" + ench.getKey().getKey().toLowerCase() + "§a from§f " + getItemName(item));
 			} else {
 				meta.addEnchant(ench, level, true);
-				p.sendMessage(PREFIX + "§aSet §7" + ench.getName().toLowerCase() + "§a level on§f " + getItemName(item)
+				p.sendMessage(PREFIX + "§aSet §7" + ench.getKey().getKey().toLowerCase() + "§a level on§f " + getItemName(item)
 						+ "§a: " + level);
 			}
 			item.setItemMeta(meta);
@@ -221,7 +228,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 		}
 
 		if (args[0].equalsIgnoreCase("name")) {
-			ItemStack item = p.getItemInHand();
+			ItemStack item = p.getInventory().getItemInMainHand();
 			if (item == null || item.getType() == Material.AIR) {
 				p.sendMessage(PREFIX + "§cYou have no item in hand");
 				return true;
@@ -247,7 +254,7 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 		}
 
 		if (args[0].equalsIgnoreCase("lore")) {
-			ItemStack item = p.getItemInHand();
+			ItemStack item = p.getInventory().getItemInMainHand();
 			if (item == null || item.getType() == Material.AIR) {
 				p.sendMessage(PREFIX + "§cYou have no item in hand");
 				return true;
@@ -382,8 +389,8 @@ public class ItemCommand implements CommandExecutor, TabCompleter {
 	}
 
 	private void lore(Player p, String s, String line) {
-		ItemManager.getNMS().sendJson(p, LORE
-				.replace("{line}", line).replace("{str}", s).replace("{rawstr}", s.replace("§", "&")));
+		String json = LORE.replace("{line}", line).replace("{str}", s).replace("{rawstr}", s.replace("§", "&"));
+		p.spigot().sendMessage(ChatMessageType.CHAT, new TextComponent(ComponentSerializer.parse(json)));
 	}
 
 	private static String getItemName(ItemStack item) {
