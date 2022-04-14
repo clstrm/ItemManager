@@ -1,7 +1,7 @@
 name: ItemManager
 main: ru.clusterstorm.itemmanager.ItemManager
 version: 0.3.2
-author: ClusterStorm
+author: HA_541 
 commands:
   itemmanager:
     aliases: [im]
